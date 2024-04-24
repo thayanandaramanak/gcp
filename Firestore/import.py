@@ -1,40 +1,27 @@
-from google.cloud import firestore
 from google.cloud import storage
 import json
+from google.cloud import firestore
+ 
+# Initialize Firestore client with specific credentials and database
+db = firestore.Client(project="glossy-ally-420106", database="supermarket")
+ 
+# Initialize Google Cloud Storage client
+storage_client = storage.Client()
+ 
+# Define your bucket and JSON file name
+bucket_name = "fs-bucket-1234"
+json_file_name = "super_db.json"
+ 
+# Download the JSON file from the Google Cloud Storage bucket
+bucket = storage_client.bucket(bucket_name)
+blob = bucket.blob(json_file_name)
+json_data = blob.download_as_string()
 
-# Initialize Firestore client
-db = firestore.Client(database="supermarket")
-
-# Function to import data from a JSON file into Firestore
-def import_data_from_json(bucket_name, json_file_path):
-    # Download the JSON file from Cloud Storage
-    storage_client = storage.Client()
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(json_file_path)
-    temp_json_file_path = "/tmp/temp.json"
-    blob.download_to_filename(temp_json_file_path)
-    
-    # Read data from the JSON file
-    with open(temp_json_file_path, "r") as json_file:
-        data = json.load(json_file)
-    
-    # Import data into Firestore
-    for collection_name, collection_data in data.items():
-        collection_ref = db.collection(collection_name)
-        import_collection_data(collection_ref, collection_data)
-    
-    print("Data imported successfully!")
-
-# Function to import collection data into Firestore
-def import_collection_data(collection_ref, data):
-    for item in data:
-        # Add document to Firestore collection
+data = json.loads(json_data)
+ 
+# Add each document from JSON data to the appropriate collection in the specified database
+for collection_name, documents in data.items():
+    collection_ref = db.collection(collection_name)
+    for document_data in documents:
         doc_ref = collection_ref.document()
-        doc_ref.set(item)
-
-# Replace 'superbucket123' and 'supermarket_data.json' with your actual bucket name and JSON file path
-bucket_name = 'superbucket123'
-json_file_path = 'supermarket_data.json'
-
-# Call the function to import data from the JSON file into Firestore
-import_data_from_json(bucket_name, json_file_path)
+        doc_ref.set(document_data)
